@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Fondo general de la aplicación y transición suave para el modo oscuro */
 body {
-  @apply bg-gray-50 dark:bg-gray-900 transition-colors duration-300;
+  background-color: var(--color-gray-50);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-gray-900);
+  }
+}
+
+.dark body {
+  background-color: var(--color-gray-900);
 }
