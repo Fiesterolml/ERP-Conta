@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Menu, X, Sun, Moon, LayoutDashboard, Users, 
-  FileText, Settings, ChevronDown, ChevronUp, 
+  Settings, ChevronDown, ChevronUp, 
   Search, Plus, Edit2, Trash2, Briefcase, 
   DollarSign, UserCheck, Bell, CheckCircle,
-  FileSpreadsheet, Calendar, AlertCircle, Eye,
-  Palmtree, PlaneTakeoff, CalendarDays, LogOut, LogIn
+  FileSpreadsheet, Eye,
+  PlaneTakeoff, CalendarDays, LogOut, LogIn
 } from 'lucide-react';
 
 import { initializeApp } from 'firebase/app';
@@ -29,13 +29,13 @@ const myFirebaseConfig = {
 };
 
 try {
-  // Lógica para que funcione tanto aquí en la vista previa como en tu Vercel
-  const configToUse = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
+  // Lógica segura para evitar errores de variables no declaradas (ESLint) en Vercel
+  const configToUse = (typeof window !== 'undefined' && window.__firebase_config) ? JSON.parse(window.__firebase_config) : myFirebaseConfig;
   
   app = initializeApp(configToUse);
   auth = getAuth(app);
   db = getFirestore(app);
-  appId = typeof __app_id !== 'undefined' ? __app_id : 'erp-prototype';
+  appId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : 'erp-prototype';
 } catch (e) {
   console.error("Error inicializando Firebase:", e);
 }
@@ -999,8 +999,8 @@ export default function App() {
   useEffect(() => {
     if (!auth) return;
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) { console.error(e); }
+      if (typeof window !== 'undefined' && window.__initial_auth_token) {
+        try { await signInWithCustomToken(auth, window.__initial_auth_token); } catch(e) { console.error(e); }
       }
     };
     initAuth();
