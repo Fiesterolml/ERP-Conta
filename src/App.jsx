@@ -193,12 +193,18 @@ const DashboardView = ({ employees, currency }) => {
 // 2. LISTA DE EMPLEADOS
 const EmployeesView = ({ employees, onEdit, onAdd, onDelete, currency }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  
   const filteredEmployees = useMemo(() => {
+    if (!employees) return [];
     return employees.filter(emp => {
+      if (!emp) return false;
       const fullName = formatFullName(emp).toLowerCase();
-      return fullName.includes(searchTerm.toLowerCase()) || 
-             emp.dni.includes(searchTerm) ||
-             (emp.correo && emp.correo.toLowerCase().includes(searchTerm.toLowerCase()));
+      const search = (searchTerm || '').toLowerCase();
+      
+      // Búsqueda a prueba de fallos: Convierte todo a String para evitar crashes
+      return fullName.includes(search) || 
+             (emp.dni && String(emp.dni).includes(search)) ||
+             (emp.correo && String(emp.correo).toLowerCase().includes(search));
     });
   }, [employees, searchTerm]);
 
@@ -972,7 +978,7 @@ const ConfigurationView = ({ darkMode, setDarkMode, currency, setCurrency }) => 
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)}/>
-              <div className="w-14 h-7 bg-bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+              <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -999,6 +1005,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [syncError, setSyncError] = useState(''); // <--- NUEVO: Alerta de sincronización
 
   const [darkMode, setDarkMode] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('theme') === 'dark' : false));
   const [currency, setCurrency] = useState(() => (typeof window !== 'undefined' ? (localStorage.getItem('currency') || 'S/.') : 'S/.'));
@@ -1037,14 +1044,26 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Firestore DB Listeners
+  // Firestore DB Listeners (Mejorado con captura de errores)
   useEffect(() => {
     if (!user || !db) return;
     
-    const unsubEmp = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'employees'), (snap) => setEmployees(snap.docs.map(d => d.data())), console.error);
-    const unsubLoans = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'loans'), (snap) => setLoans(snap.docs.map(d => d.data())), console.error);
-    const unsubVacP = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods'), (snap) => setVacationPeriods(snap.docs.map(d => d.data())), console.error);
-    const unsubVacR = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests'), (snap) => setVacationRequests(snap.docs.map(d => d.data())), console.error);
+    const handleDbError = (err) => {
+      console.error("Error al leer de la base de datos:", err);
+      setSyncError("Error de permisos: No se pueden descargar los datos. Por favor, asegúrate de haber actualizado las Reglas de Firebase a 'if true'.");
+    };
+
+    const unsubEmp = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'employees'), 
+      (snap) => { setEmployees(snap.docs.map(d => d.data())); setSyncError(''); }, handleDbError);
+    
+    const unsubLoans = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'loans'), 
+      (snap) => setLoans(snap.docs.map(d => d.data())), handleDbError);
+    
+    const unsubVacP = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods'), 
+      (snap) => setVacationPeriods(snap.docs.map(d => d.data())), handleDbError);
+    
+    const unsubVacR = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests'), 
+      (snap) => setVacationRequests(snap.docs.map(d => d.data())), handleDbError);
 
     return () => { unsubEmp(); unsubLoans(); unsubVacP(); unsubVacR(); };
   }, [user]);
@@ -1086,7 +1105,28 @@ export default function App() {
 
   const handleDeleteEmployee = async (id) => {
     if (!user || !db) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', id.toString()));
+    const empIdStr = id.toString();
+    
+    // 1. Eliminar al trabajador
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', empIdStr));
+    
+    // 2. Eliminar préstamos asociados (Borrado en cascada)
+    const employeeLoans = loans.filter(l => String(l.employeeId) === empIdStr);
+    for (const loan of employeeLoans) {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', loan.id.toString()));
+    }
+    
+    // 3. Eliminar periodos de vacaciones asociados (Borrado en cascada)
+    const employeePeriods = vacationPeriods.filter(p => String(p.employeeId) === empIdStr);
+    for (const period of employeePeriods) {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', period.id.toString()));
+    }
+    
+    // 4. Eliminar solicitudes de vacaciones asociadas (Borrado en cascada)
+    const employeeRequests = vacationRequests.filter(r => String(r.employeeId) === empIdStr);
+    for (const req of employeeRequests) {
+      await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests', req.id.toString()));
+    }
   };
 
   const handleSaveLoan = async (newLoan) => {
@@ -1224,7 +1264,16 @@ export default function App() {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          
+          {/* BANNER DE ERROR DE SINCRONIZACIÓN */}
+          {syncError && (
+            <div className="bg-red-50 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-3 text-sm text-center font-medium flex justify-center items-center gap-2 transition-colors">
+              <AlertCircle size={16} />
+              {syncError}
+            </div>
+          )}
+
           <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 sm:px-6 z-10 transition-colors">
             <div className="flex items-center">
               <button onClick={() => setSidebarOpen(true)} className="md:hidden mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400"><Menu size={24} /></button>
