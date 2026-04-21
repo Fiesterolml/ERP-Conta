@@ -16,9 +16,24 @@ import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'fi
 // FIREBASE SETUP
 // ==========================================
 let app, auth, db, appId;
+
+// REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO DE FIREBASE
+// (Los encuentras en la Configuración de tu proyecto en la consola de Firebase)
+const myFirebaseConfig = {
+  apiKey: "AIzaSyAo69pOboAkXHlzOYG3RtcRWvY6i494DZI",
+  authDomain: "erp-conta.firebaseapp.com",
+  projectId: "erp-conta",
+  storageBucket: "erp-conta.firebasestorage.app",
+  messagingSenderId: "1019862550393",
+  appId: "1:1019862550393:web:7a173aea521d3875b691a8",
+  measurementId: "G-E758BFM3DD"
+};
+
 try {
-  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-  app = initializeApp(firebaseConfig);
+  // Lógica para que funcione tanto aquí en la vista previa como en tu Vercel
+  const configToUse = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
+  
+  app = initializeApp(configToUse);
   auth = getAuth(app);
   db = getFirestore(app);
   appId = typeof __app_id !== 'undefined' ? __app_id : 'erp-prototype';
