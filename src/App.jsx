@@ -17,8 +17,7 @@ import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'fi
 // ==========================================
 let app, auth, db, appId;
 
-// REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO DE FIREBASE
-// (Los encuentras en la Configuración de tu proyecto en la consola de Firebase)
+// TUS VALORES DE FIREBASE MANTENIDOS INTACTOS
 const myFirebaseConfig = {
   apiKey: "AIzaSyAo69pOboAkXHlzOYG3RtcRWvY6i494DZI",
   authDomain: "erp-conta.firebaseapp.com",
