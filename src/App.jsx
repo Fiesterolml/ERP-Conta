@@ -1007,6 +1007,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
+      setActionLoading(false); // <-- ¡AQUÍ ESTÁ LA SOLUCIÓN! Vuelve a habilitar los botones.
     });
     return () => unsubscribe();
   }, []);
