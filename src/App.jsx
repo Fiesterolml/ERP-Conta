@@ -4,7 +4,7 @@ import {
   Settings, ChevronDown, ChevronUp, 
   Search, Plus, Edit2, Trash2, Briefcase, 
   DollarSign, UserCheck, Bell, CheckCircle,
-  FileSpreadsheet, Eye,
+  FileSpreadsheet, Eye, AlertCircle,
   PlaneTakeoff, CalendarDays, LogOut, LogIn
 } from 'lucide-react';
 
@@ -888,14 +888,37 @@ const EmployeeFormView = ({ employee, onSave, onCancel, currency }) => {
     dni: '', nombres: '', apellidoPaterno: '', apellidoMaterno: '', nacionalidad: 'Peruana', correo: '',
     cargo: '', sueldoBase: '', fechaIngreso: new Date().toISOString().split('T')[0], estado: 'Activo' 
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleChange = (e) => { const { name, value } = e.target; setFormData(prev => ({ ...prev, [name]: value })); };
-  const handleSubmit = (e) => { e.preventDefault(); onSave(formData); };
+  
+  const handleSubmit = async (e) => { 
+    e.preventDefault(); 
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSave(formData);
+    } catch (err) {
+      console.error(err);
+      setSaveError("No se pudo guardar. Verifica que tu base de datos Firestore esté creada y configurada en Firebase.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{isEdit ? 'Editar Trabajador' : 'Nuevo Trabajador'}</h2>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8">
+        
+        {saveError && (
+          <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <p className="text-sm font-medium">{saveError}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">DNI</label><input required type="text" name="dni" value={formData.dni} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
@@ -910,7 +933,7 @@ const EmployeeFormView = ({ employee, onSave, onCancel, currency }) => {
             </div>
             <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">Correo</label><input required type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
             <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">Cargo</label><input required type="text" name="cargo" value={formData.cargo} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
-            <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sueldo Base ({currency})</label><input required type="number" name="sueldoBase" value={formData.sueldoBase} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
+            <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sueldo Base ({currency})</label><input required type="number" step="any" name="sueldoBase" value={formData.sueldoBase} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
             <div className="space-y-1"><label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Ingreso</label><input required type="date" name="fechaIngreso" value={formData.fechaIngreso} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500" /></div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Estado</label>
@@ -920,8 +943,10 @@ const EmployeeFormView = ({ employee, onSave, onCancel, currency }) => {
             </div>
           </div>
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" onClick={onCancel} className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancelar</button>
-            <button type="submit" className="px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">{isEdit ? 'Actualizar' : 'Guardar'}</button>
+            <button type="button" onClick={onCancel} disabled={isSaving} className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">Cancelar</button>
+            <button type="submit" disabled={isSaving} className="px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors disabled:opacity-50">
+              {isSaving ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Guardar')}
+            </button>
           </div>
         </form>
       </div>
@@ -947,7 +972,7 @@ const ConfigurationView = ({ darkMode, setDarkMode, currency, setCurrency }) => 
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)}/>
-              <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+              <div className="w-14 h-7 bg-bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -1007,7 +1032,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
-      setActionLoading(false); // <-- ¡AQUÍ ESTÁ LA SOLUCIÓN! Vuelve a habilitar los botones.
+      setActionLoading(false); 
     });
     return () => unsubscribe();
   }, []);
@@ -1040,10 +1065,13 @@ export default function App() {
 
   // ================= CRUD CLOUD =================
   const handleSaveEmployee = async (data) => {
-    if (!user || !db) return;
+    if (!user || !db) throw new Error("Base de datos no inicializada.");
     const isNew = !editingEmployee;
     const id = isNew ? Date.now().toString() : editingEmployee.id.toString();
+    
+    // Si esto falla (por ejemplo por falta de permisos), el throw será capturado en EmployeeFormView
     await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', id), { ...data, id });
+    
     if (isNew && data.fechaIngreso) {
       const fechaFin = addOneYear(data.fechaIngreso);
       const periodoStr = `${data.fechaIngreso.split('-').reverse().join('/')} - ${fechaFin.split('-').reverse().join('/')}`;
@@ -1055,6 +1083,7 @@ export default function App() {
     }
     navigateTo('employees');
   };
+
   const handleDeleteEmployee = async (id) => {
     if (!user || !db) return;
     await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', id.toString()));
