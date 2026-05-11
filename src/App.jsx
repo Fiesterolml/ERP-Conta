@@ -35,7 +35,11 @@ try {
   app = initializeApp(configToUse);
   auth = getAuth(app);
   db = getFirestore(app);
-  appId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : 'erp-prototype';
+  
+  // Limpiamos el appId para evitar el error de "Invalid collection reference" si el entorno inyecta barras (/)
+  const rawAppId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : 'erp-prototype';
+  appId = rawAppId.replace(/\//g, '_');
+  
 } catch (e) {
   console.error("Error inicializando Firebase:", e);
 }
@@ -1023,8 +1027,16 @@ export default function App() {
   const [isMantenimientoMenuOpen, setIsMantenimientoMenuOpen] = useState(true);
   const [isConsultasMenuOpen, setIsConsultasMenuOpen] = useState(false); 
 
-  // Guardar LocalStorage
-  useEffect(() => { localStorage.setItem('theme', darkMode ? 'dark' : 'light'); }, [darkMode]);
+  // Guardar LocalStorage e inyectar clase en HTML
+  useEffect(() => { 
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light'); 
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+  
   useEffect(() => { localStorage.setItem('currency', currency); }, [currency]);
 
   // Firebase Auth Listener
