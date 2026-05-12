@@ -33,7 +33,7 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
   
-  // SOLUCIÓN CRÍTICA: Limpiar barras del appId para evitar error de "6 segmentos" en Firestore
+  // SOLUCIÓN CRÍTICA: Limpiar barras del appId para evitar error de segmentos en Firestore
   const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'erp-prototype';
   appId = rawAppId.replace(/\//g, '_');
 } catch (e) {
@@ -80,21 +80,6 @@ const calculateDaysDiff = (start, end) => {
   const diffTime = endDate - startDate;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
   return diffDays > 0 ? diffDays : 0;
-};
-
-const calculateWeekends = (start, end) => {
-  if (!start || !end) return 0;
-  let d1 = new Date(start);
-  let d2 = new Date(end);
-  d1.setMinutes(d1.getMinutes() + d1.getTimezoneOffset());
-  d2.setMinutes(d2.getMinutes() + d2.getTimezoneOffset());
-  let count = 0;
-  while (d1 <= d2) {
-    let day = d1.getDay();
-    if (day === 0 || day === 6) count++;
-    d1.setDate(d1.getDate() + 1);
-  }
-  return count;
 };
 
 const formatFullName = (emp) => {
@@ -222,32 +207,17 @@ const EmployeesView = ({ employees, onEdit, onAdd, onDelete, currency }) => {
         <div className="overflow-x-auto min-h-[250px]">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-200 dark:border-gray-700">
-                <th className="p-4 font-semibold">DNI</th>
-                <th className="p-4 font-semibold">Nombre Completo</th>
-                <th className="p-4 font-semibold">Cargo</th>
-                <th className="p-4 font-semibold">Fecha Ingreso</th>
-                <th className="p-4 font-semibold">Sueldo Base</th>
-                <th className="p-4 font-semibold">Estado</th>
-                <th className="p-4 font-semibold text-right">Acciones</th>
+              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm border-b border-gray-200 dark:border-gray-700 font-bold">
+                <th className="p-4">DNI</th><th className="p-4">Nombre Completo</th><th className="p-4">Cargo</th><th className="p-4">Sueldo Base</th><th className="p-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredEmployees.map((emp) => (
                 <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="p-4 text-gray-800 dark:text-gray-200">{emp.dni}</td>
-                  <td className="p-4">
-                    <p className="font-medium text-gray-900 dark:text-white">{formatFullName(emp)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{emp.correo}</p>
-                  </td>
+                  <td className="p-4"><p className="font-medium text-gray-900 dark:text-white">{formatFullName(emp)}</p></td>
                   <td className="p-4 text-gray-600 dark:text-gray-300 text-sm">{emp.cargo}</td>
-                  <td className="p-4 text-gray-800 dark:text-gray-200">{emp.fechaIngreso}</td>
-                  <td className="p-4 text-gray-800 dark:text-gray-200 font-medium text-blue-600 dark:text-blue-400">{currency} {emp.sueldoBase}</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${emp.estado === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                      {emp.estado}
-                    </span>
-                  </td>
+                  <td className="p-4 font-medium text-blue-600 dark:text-blue-400">{currency} {emp.sueldoBase}</td>
                   <td className="p-4 flex justify-end gap-2">
                     <button onClick={() => onEdit(emp)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 rounded-lg transition-colors"><Edit2 size={18} /></button>
                     <button onClick={() => onDelete(emp.id)} className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 rounded-lg transition-colors"><Trash2 size={18} /></button>
@@ -255,7 +225,7 @@ const EmployeesView = ({ employees, onEdit, onAdd, onDelete, currency }) => {
                 </tr>
               ))}
               {filteredEmployees.length === 0 && (
-                <tr><td colSpan="7" className="p-8 text-center text-gray-500 dark:text-gray-400">No hay registros almacenados.</td></tr>
+                <tr><td colSpan="5" className="p-8 text-center text-gray-500 dark:text-gray-400">No hay registros almacenados.</td></tr>
               )}
             </tbody>
           </table>
@@ -270,85 +240,52 @@ const LoansView = ({ employees, loans, onSaveLoan, onDeleteLoan, onProcessLoan, 
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedLoanDetails, setSelectedLoanDetails] = useState(null);
 
-  const displayedData = useMemo(() => {
-    return (loans || []).filter(l => l.tipo === activeTab);
-  }, [loans, activeTab]);
-
+  const displayedData = useMemo(() => (loans || []).filter(l => l.tipo === activeTab), [loans, activeTab]);
   const getEmployeeName = (id) => formatFullName(employees.find(e => String(e.id) === String(id)));
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Préstamos y Solicitudes</h2>
-        <button onClick={() => setShowNewModal(true)} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm">
-          <Plus size={18} /><span>Nueva Solicitud</span>
-        </button>
+        <button onClick={() => setShowNewModal(true)} className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg"><Plus size={18} /><span>Nueva Solicitud</span></button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-          <div className="flex bg-gray-200/50 dark:bg-gray-800 p-1 rounded-lg w-fit border border-gray-200 dark:border-gray-700">
-            <button onClick={() => setActiveTab('solicitud')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'solicitud' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Solicitudes</button>
-            <button onClick={() => setActiveTab('prestamo')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'prestamo' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Préstamos</button>
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-2">
+          <button onClick={() => setActiveTab('solicitud')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${activeTab === 'solicitud' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Solicitudes</button>
+          <button onClick={() => setActiveTab('prestamo')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${activeTab === 'prestamo' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Préstamos</button>
         </div>
-
         <div className="overflow-x-auto min-h-[200px]">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="p-3 font-semibold">Cód. Solicitud</th>
-                <th className="p-3 font-semibold">Trabajador</th>
-                <th className="p-3 font-semibold">Fecha</th>
-                <th className="p-3 font-semibold text-right">Monto</th>
-                <th className="p-3 font-semibold text-center">Estado</th>
-                <th className="p-3 font-semibold text-center">Acciones</th>
+              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b dark:border-gray-700 font-bold">
+                <th className="p-3">Trabajador</th><th className="p-3">Monto</th><th className="p-3 text-center">Estado</th><th className="p-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {displayedData.map((item) => (
                 <tr key={item.id} onClick={() => activeTab === 'prestamo' && setSelectedLoanDetails(item)} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${activeTab === 'prestamo' ? 'cursor-pointer' : ''}`}>
-                  <td className="p-3 text-gray-800 dark:text-gray-300 font-mono">{item.codigoSolicitud}</td>
                   <td className="p-3 font-medium text-gray-900 dark:text-white">{getEmployeeName(item.employeeId)}</td>
-                  <td className="p-3 text-gray-600 dark:text-gray-400">{item.fechaCreacion}</td>
-                  <td className="p-3 text-right font-medium text-blue-600 dark:text-blue-400">{currency} {item.monto?.toFixed(2)}</td>
-                  <td className="p-3 text-center">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${item.estado === 'Aprobado' ? 'bg-green-100 text-green-800 dark:bg-green-900/30' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30'}`}>{item.estado}</span>
-                  </td>
-                  <td className="p-3 text-center flex justify-center gap-2">
-                    {activeTab === 'solicitud' && <button onClick={(e) => { e.stopPropagation(); onProcessLoan(item.id); }} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Procesar"><CheckCircle size={18}/></button>}
-                    <button onClick={(e) => { e.stopPropagation(); onDeleteLoan(item.id); if (selectedLoanDetails?.id === item.id) setSelectedLoanDetails(null); }} className="p-1 text-red-500 hover:bg-red-50 rounded" title="Eliminar"><Trash2 size={18}/></button>
+                  <td className="p-3 font-bold text-blue-600 dark:text-blue-400">{currency} {item.monto?.toFixed(2)}</td>
+                  <td className="p-3 text-center"><span className={`px-2 py-0.5 text-xs font-medium rounded-full ${item.estado === 'Aprobado' ? 'bg-green-100 text-green-800 dark:bg-green-900/30' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30'}`}>{item.estado}</span></td>
+                  <td className="p-3 text-center flex justify-end gap-2">
+                    {activeTab === 'solicitud' && <button onClick={(e) => { e.stopPropagation(); onProcessLoan(item.id); }} className="p-1 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={18}/></button>}
+                    <button onClick={(e) => { e.stopPropagation(); onDeleteLoan(item.id); if (selectedLoanDetails?.id === item.id) setSelectedLoanDetails(null); }} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={18}/></button>
                   </td>
                 </tr>
               ))}
-              {displayedData.length === 0 && (
-                <tr><td colSpan="6" className="p-8 text-center text-gray-500 dark:text-gray-400">No hay registros para mostrar.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
-
         {activeTab === 'prestamo' && selectedLoanDetails && (
           <div className="border-t-4 border-blue-500 bg-gray-50 dark:bg-gray-800/80 p-4">
-            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-              <FileSpreadsheet size={16} /> Detalle de Amortización: <span className="text-blue-600 dark:text-blue-400">{selectedLoanDetails.codigoPrestamo || 'PRST-VIGENTE'}</span>
-            </h4>
-            <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 font-bold">
-                    <th className="p-2 text-center">Cuota</th><th className="p-2 text-right">Interés</th><th className="p-2 text-right">Capital</th><th className="p-2 text-right">Monto Total</th><th className="p-2 text-center">Pagado</th>
-                  </tr>
-                </thead>
+            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2"><FileSpreadsheet size={16} /> Plan de Amortización</h4>
+            <div className="overflow-x-auto bg-white dark:bg-gray-900 rounded border dark:border-gray-700">
+              <table className="w-full text-left text-xs">
+                <thead><tr className="bg-gray-100 dark:bg-gray-800 font-bold border-b dark:border-gray-700"><th className="p-2">Cuota</th><th className="p-2">Interés</th><th className="p-2">Capital</th><th className="p-2">Total</th><th className="p-2">Pagado</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {selectedLoanDetails.detalleCuotas?.map((c, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="p-2 text-center font-medium dark:text-gray-300">{c.numero}</td>
-                      <td className="p-2 text-right dark:text-gray-400">{currency} {c.interes.toFixed(2)}</td>
-                      <td className="p-2 text-right dark:text-gray-400">{currency} {c.capital.toFixed(2)}</td>
-                      <td className="p-2 text-right font-bold dark:text-gray-200">{currency} {c.montoCuota.toFixed(2)}</td>
-                      <td className="p-2 text-center"><input type="checkbox" checked={c.pagado} readOnly className="rounded text-blue-600" /></td>
-                    </tr>
+                    <tr key={idx}><td className="p-2 text-center">{c.numero}</td><td className="p-2">{currency} {c.interes.toFixed(2)}</td><td className="p-2">{currency} {c.capital.toFixed(2)}</td><td className="p-2 font-bold">{currency} {c.montoCuota.toFixed(2)}</td><td className="p-2 text-center"><input type="checkbox" checked={c.pagado} readOnly className="rounded text-blue-600" /></td></tr>
                   ))}
                 </tbody>
               </table>
@@ -356,7 +293,6 @@ const LoansView = ({ employees, loans, onSaveLoan, onDeleteLoan, onProcessLoan, 
           </div>
         )}
       </div>
-
       {showNewModal && <NewLoanModal employees={employees} currency={currency} onClose={() => setShowNewModal(false)} onSave={(l) => { onSaveLoan(l); setShowNewModal(false); }} />}
     </div>
   );
@@ -372,30 +308,20 @@ const VacationsView = ({ employees, vacationPeriods, vacationRequests, onSavePer
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Gestión de Vacaciones</h2>
-        <button onClick={() => activeTab === 'periodos' ? setShowPeriodModal(true) : setShowRequestModal(true)} className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm">
-          <Plus size={18} /><span>{activeTab === 'periodos' ? 'Nuevo Periodo' : 'Solicitar'}</span>
-        </button>
+        <button onClick={() => activeTab === 'periodos' ? setShowPeriodModal(true) : setShowRequestModal(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"><Plus size={18}/><span>{activeTab === 'periodos' ? 'Nuevo Periodo' : 'Solicitar'}</span></button>
       </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-          <div className="flex bg-gray-200/50 dark:bg-gray-800 p-1 rounded-lg w-fit border border-gray-200 dark:border-gray-700">
-            <button onClick={() => setActiveTab('periodos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'periodos' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Periodos Pendientes</button>
-            <button onClick={() => setActiveTab('solicitudes')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'solicitudes' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400'}`}>Solicitudes</button>
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex gap-2">
+           <button onClick={() => setActiveTab('periodos')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${activeTab === 'periodos' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600'}`}>Periodos</button>
+           <button onClick={() => setActiveTab('solicitudes')} className={`px-4 py-1.5 rounded-md text-sm font-medium ${activeTab === 'solicitudes' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600'}`}>Solicitudes</button>
         </div>
-
         <div className="overflow-x-auto min-h-[200px]">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 font-bold">
-                <th className="p-3">Trabajador</th>
-                <th className="p-3">{activeTab === 'periodos' ? 'Rango Periodo' : 'Salida / Retorno'}</th>
-                <th className="p-3 text-center">Días</th>
-                {activeTab === 'solicitudes' && <th className="p-3 text-center">Estado</th>}
-                <th className="p-3 text-right">Acciones</th>
+              <tr className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border-b dark:border-gray-700 font-bold">
+                <th className="p-3">Trabajador</th><th className="p-3">{activeTab === 'periodos' ? 'Periodo' : 'Rango'}</th><th className="p-3 text-center">Días</th><th className="p-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -405,9 +331,7 @@ const VacationsView = ({ employees, vacationPeriods, vacationRequests, onSavePer
                     <td className="p-3 font-medium text-gray-900 dark:text-white">{getEmployeeName(p.employeeId)}</td>
                     <td className="p-3 text-gray-600 dark:text-gray-400">{p.periodo}</td>
                     <td className="p-3 text-center font-bold text-indigo-600 dark:text-indigo-400">{p.saldo}</td>
-                    <td className="p-3 text-right">
-                      <button onClick={(e) => { e.stopPropagation(); onDeletePeriod(p.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={18}/></button>
-                    </td>
+                    <td className="p-3 text-right"><button onClick={(e) => { e.stopPropagation(); onDeletePeriod(p.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={18}/></button></td>
                   </tr>
                 ))
               ) : (
@@ -416,12 +340,9 @@ const VacationsView = ({ employees, vacationPeriods, vacationRequests, onSavePer
                     <td className="p-3 font-medium text-gray-900 dark:text-white">{getEmployeeName(r.employeeId)}</td>
                     <td className="p-3 text-gray-600 dark:text-gray-400">{r.fechaSalida} al {r.fechaRetorno}</td>
                     <td className="p-3 text-center font-bold dark:text-gray-300">{r.totalDias}</td>
-                    <td className="p-3 text-center">
-                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${r.estado === 'Aprobado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{r.estado}</span>
-                    </td>
                     <td className="p-3 text-right flex justify-end gap-2">
-                      {r.estado === 'Pendiente' && <button onClick={() => onProcessRequest(r)} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"><CheckCircle size={18}/></button>}
-                      <button onClick={() => onDeleteRequest(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={18}/></button>
+                      {r.estado === 'Pendiente' && <button onClick={() => onProcessRequest(r)} className="p-1.5 text-green-600 hover:bg-green-50 rounded"><CheckCircle size={18}/></button>}
+                      <button onClick={() => onDeleteRequest(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={18}/></button>
                     </td>
                   </tr>
                 ))
@@ -429,37 +350,14 @@ const VacationsView = ({ employees, vacationPeriods, vacationRequests, onSavePer
             </tbody>
           </table>
         </div>
-
-        {activeTab === 'periodos' && selectedPeriodDetails && (
-          <div className="border-t-4 border-indigo-500 bg-gray-50 dark:bg-gray-800/80 p-4">
-            <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-              <CalendarDays size={16} /> Vacaciones Tomadas en el Periodo: <span className="text-indigo-600 dark:text-indigo-400">{selectedPeriodDetails.periodo}</span>
-            </h4>
-            <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 p-4 text-xs">
-              {vacationRequests.filter(r => String(r.periodId) === String(selectedPeriodDetails.id) && r.estado === 'Aprobado').length === 0 ? (
-                <p className="text-gray-500 italic">No hay vacaciones aprobadas para este periodo.</p>
-              ) : (
-                <ul className="space-y-1">
-                  {vacationRequests.filter(r => String(r.periodId) === String(selectedPeriodDetails.id) && r.estado === 'Aprobado').map(r => (
-                    <li key={r.id} className="flex justify-between border-b dark:border-gray-800 pb-1">
-                      <span className="dark:text-gray-300">{r.fechaSalida} al {r.fechaRetorno}</span>
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{r.totalDias} días</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-
-      {showPeriodModal && <NewPeriodModal employees={employees} onClose={() => setShowPeriodModal(false)} onSave={(p) => { onSavePeriod(p); setShowPeriodModal(false); }} />}
-      {showRequestModal && <TakeVacationModal employees={employees} vacationPeriods={vacationPeriods} onClose={() => setShowRequestModal(false)} onSave={(r) => { onSaveRequest(r); setShowRequestModal(false); }} />}
+      {showPeriodModal && <NewPeriodModal employees={employees} onClose={() => setShowPeriodModal(false)} onSave={onSavePeriod} />}
+      {showRequestModal && <TakeVacationModal employees={employees} vacationPeriods={vacationPeriods} onClose={() => setShowRequestModal(false)} onSave={onSaveRequest} />}
     </div>
   );
 };
 
-// MODALES DE APOYO
+// MODALES COMPLEMENTARIOS
 const NewLoanModal = ({ employees, currency, onClose, onSave }) => {
   const [formData, setFormData] = useState({ employeeId: employees[0]?.id || '', monto: 1000, nroCuotas: 12, tasaInteres: 3.5 });
   const handleSubmit = (e) => { e.preventDefault(); onSave({ ...formData, id: Date.now().toString(), tipo: 'solicitud', estado: 'Pendiente', fechaCreacion: new Date().toISOString().split('T')[0] }); };
@@ -468,15 +366,9 @@ const NewLoanModal = ({ employees, currency, onClose, onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
         <h3 className="text-lg font-bold mb-4 dark:text-white">Nueva Solicitud de Préstamo</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1"><label className="text-xs font-bold uppercase text-gray-500">Trabajador</label><select value={formData.employeeId} onChange={e => setFormData({...formData, employeeId: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600">{employees.map(e => <option key={e.id} value={e.id}>{formatFullName(e)}</option>)}</select></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1"><label className="text-xs font-bold uppercase text-gray-500">Monto ({currency})</label><input type="number" step="any" value={formData.monto} onChange={e => setFormData({...formData, monto: Number(e.target.value)})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
-            <div className="space-y-1"><label className="text-xs font-bold uppercase text-gray-500">Nro Cuotas</label><input type="number" value={formData.nroCuotas} onChange={e => setFormData({...formData, nroCuotas: Number(e.target.value)})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-medium">Cancelar</button>
-            <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium shadow-md">Crear Solicitud</button>
-          </div>
+          <select value={formData.employeeId} onChange={e => setFormData({...formData, employeeId: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600">{employees.map(e => <option key={e.id} value={e.id}>{formatFullName(e)}</option>)}</select>
+          <div className="grid grid-cols-2 gap-4"><input type="number" step="any" placeholder="Monto" value={formData.monto} onChange={e => setFormData({...formData, monto: Number(e.target.value)})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /><input type="number" placeholder="Cuotas" value={formData.nroCuotas} onChange={e => setFormData({...formData, nroCuotas: Number(e.target.value)})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
+          <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700"><button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-medium">Cancelar</button><button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium shadow-md">Enviar</button></div>
         </form>
       </div>
     </div>
@@ -485,7 +377,7 @@ const NewLoanModal = ({ employees, currency, onClose, onSave }) => {
 
 const NewPeriodModal = ({ employees, onClose, onSave }) => {
   const [formData, setFormData] = useState({ employeeId: employees[0]?.id || '', fechaInicio: new Date().toISOString().split('T')[0] });
-  const handleSubmit = (e) => { e.preventDefault(); const fin = addOneYear(formData.fechaInicio); onSave({ id: Date.now().toString(), employeeId: formData.employeeId, periodo: `${formData.fechaInicio} - ${fin}`, saldo: 30, diasOtorgados: 30, remIntegra: false }); };
+  const handleSubmit = (e) => { e.preventDefault(); const fin = addOneYear(formData.fechaInicio); onSave({ id: Date.now().toString(), employeeId: formData.employeeId, periodo: `${formData.fechaInicio} - ${fin}`, saldo: 30, diasOtorgados: 30, remIntegra: false }); onClose(); };
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-2xl">
@@ -493,10 +385,7 @@ const NewPeriodModal = ({ employees, onClose, onSave }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <select value={formData.employeeId} onChange={e => setFormData({...formData, employeeId: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600">{employees.map(e => <option key={e.id} value={e.id}>{formatFullName(e)}</option>)}</select>
           <input type="date" value={formData.fechaInicio} onChange={e => setFormData({...formData, fechaInicio: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" />
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2">Cancelar</button>
-            <button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium shadow-md">Generar Periodo</button>
-          </div>
+          <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={onClose} className="px-4 py-2 text-gray-500">Cancelar</button><button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium shadow-md">Generar</button></div>
         </form>
       </div>
     </div>
@@ -504,32 +393,19 @@ const NewPeriodModal = ({ employees, onClose, onSave }) => {
 };
 
 const TakeVacationModal = ({ employees, vacationPeriods, onClose, onSave }) => {
-  const [formData, setFormData] = useState({ employeeId: employees[0]?.id || '', fechaSalida: new Date().toISOString().split('T')[0], fechaRetorno: '', totalDias: 1 });
+  const [formData, setFormData] = useState({ employeeId: employees[0]?.id || '', fechaSalida: new Date().toISOString().split('T')[0], fechaRetorno: '', totalDias: 0 });
   const periods = (vacationPeriods || []).filter(p => String(p.employeeId) === String(formData.employeeId));
-  
-  useEffect(() => {
-    if (formData.fechaSalida && formData.fechaRetorno) {
-      setFormData(prev => ({ ...prev, totalDias: calculateDaysDiff(formData.fechaSalida, formData.fechaRetorno) }));
-    }
-  }, [formData.fechaSalida, formData.fechaRetorno]);
-
-  const handleSubmit = (e) => { e.preventDefault(); if (periods[0]) onSave({ ...formData, id: Date.now().toString(), periodId: periods[0].id, estado: 'Pendiente' }); };
-  
+  useEffect(() => { if (formData.fechaSalida && formData.fechaRetorno) setFormData(prev => ({ ...prev, totalDias: calculateDaysDiff(formData.fechaSalida, formData.fechaRetorno) })); }, [formData.fechaSalida, formData.fechaRetorno]);
+  const handleSubmit = (e) => { e.preventDefault(); if (periods[0]) onSave({ ...formData, id: Date.now().toString(), periodId: periods[0].id, estado: 'Pendiente' }); onClose(); };
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-2xl">
         <h3 className="text-lg font-bold mb-4 dark:text-white">Solicitar Vacaciones</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <select value={formData.employeeId} onChange={e => setFormData({...formData, employeeId: e.target.value})} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600">{employees.map(e => <option key={e.id} value={e.id}>{formatFullName(e)}</option>)}</select>
-          <div className="grid grid-cols-2 gap-2">
-            <input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" />
-            <input type="date" value={formData.fechaRetorno} onChange={e => setFormData({...formData, fechaRetorno: e.target.value})} className="p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" />
-          </div>
-          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded text-center font-bold text-indigo-600 dark:text-indigo-400">Total Días: {formData.totalDias}</div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2">Cancelar</button>
-            <button type="submit" disabled={!periods[0]} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium shadow-md disabled:opacity-50">Enviar Solicitud</button>
-          </div>
+          <div className="grid grid-cols-2 gap-2"><input type="date" value={formData.fechaSalida} onChange={e => setFormData({...formData, fechaSalida: e.target.value})} className="p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /><input type="date" value={formData.fechaRetorno} onChange={e => setFormData({...formData, fechaRetorno: e.target.value})} className="p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded text-center font-bold text-indigo-600 dark:text-indigo-400">Días: {formData.totalDias}</div>
+          <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={onClose} className="px-4 py-2">Cancelar</button><button type="submit" disabled={!periods[0]} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium shadow-md disabled:opacity-50">Solicitar</button></div>
         </form>
       </div>
     </div>
@@ -563,7 +439,7 @@ const EmployeeFormView = ({ employee, onSave, onCancel, currency }) => {
   return (
     <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-xl p-8 shadow-xl border dark:border-gray-700">
       <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">{isEdit ? 'Editar Trabajador' : 'Nuevo Trabajador'}</h2>
-      {saveError && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 border border-red-200"><AlertCircle size={20}/>{saveError}</div>}
+      {saveError && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200"><AlertCircle size={20}/>{saveError}</div>}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="space-y-1"><label className="text-sm font-medium dark:text-gray-300">DNI</label><input required name="dni" value={formData.dni} onChange={handleChange} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
         <div className="space-y-1"><label className="text-sm font-medium dark:text-gray-300">Nombres</label><input required name="nombres" value={formData.nombres} onChange={handleChange} className="w-full p-2 border rounded dark:bg-gray-900 dark:text-white dark:border-gray-600" /></div>
@@ -575,7 +451,7 @@ const EmployeeFormView = ({ employee, onSave, onCancel, currency }) => {
         <div className="col-span-full flex justify-end gap-3 mt-4">
           <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium">Cancelar</button>
           <button type="submit" disabled={isSaving} className="bg-blue-600 text-white px-8 py-2 rounded-lg font-medium shadow-md hover:bg-blue-700 disabled:opacity-50 transition-all">
-            {isSaving ? 'Guardando...' : 'Guardar Datos'}
+            {isSaving ? 'Guardando...' : 'Guardar Trabajador'}
           </button>
         </div>
       </form>
@@ -591,22 +467,17 @@ const ConfigurationView = ({ darkMode, setDarkMode, currency, setCurrency }) => 
         <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border dark:border-gray-700">
           <div>
             <p className="font-bold text-gray-900 dark:text-white">Modo Oscuro</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Reduce la fatiga visual activando el tema oscuro.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Activa el tema oscuro globalmente.</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" className="sr-only peer" checked={darkMode} onChange={(e) => setDarkMode(e.target.checked)}/>
-            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600 transition-all"></div>
           </label>
         </div>
         <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border dark:border-gray-700">
-          <div>
-            <p className="font-bold text-gray-900 dark:text-white">Moneda Base</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Símbolo que se mostrará en los montos de nómina.</p>
-          </div>
+          <div><p className="font-bold text-gray-900 dark:text-white">Moneda Base</p><p className="text-sm text-gray-500 dark:text-gray-400">Símbolo de nómina.</p></div>
           <div className="flex gap-2 bg-gray-200 dark:bg-gray-800 p-1 rounded-lg">
-            {['S/.', '$'].map(c => (
-              <button key={c} onClick={() => setCurrency(c)} className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${currency === c ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{c}</button>
-            ))}
+            {['S/.', '$'].map(c => (<button key={c} onClick={() => setCurrency(c)} className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${currency === c ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500'}`}>{c}</button>))}
           </div>
         </div>
       </div>
@@ -615,7 +486,7 @@ const ConfigurationView = ({ darkMode, setDarkMode, currency, setCurrency }) => 
 };
 
 // ==========================================
-// COMPONENTE PRINCIPAL (APP)
+// APLICACIÓN PRINCIPAL
 // ==========================================
 export default function App() {
   const [user, setUser] = useState(null);
@@ -638,7 +509,7 @@ export default function App() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isPlanillaMenuOpen, setIsPlanillaMenuOpen] = useState(true);
 
-  // PERSISTENCIA DE MODO OSCURO
+  // PERSISTENCIA Y APLICACIÓN DE MODO OSCURO GLOBAL
   useEffect(() => { 
     localStorage.setItem('theme', darkMode ? 'dark' : 'light'); 
     if (darkMode) {
@@ -650,12 +521,11 @@ export default function App() {
   
   useEffect(() => { localStorage.setItem('currency', currency); }, [currency]);
 
-  // AUTH LISTENER
   useEffect(() => {
     if (!auth) return;
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e) {}
+      if (typeof window !== 'undefined' && window.__initial_auth_token) {
+        try { await signInWithCustomToken(auth, window.__initial_auth_token); } catch(e) {}
       } else {
         try { await signInAnonymously(auth); } catch(e) {}
       }
@@ -669,86 +539,44 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // DATA LISTENER (FIRESTORE)
   useEffect(() => {
     if (!user || !db) return;
-    
-    const handleDbError = (err) => {
-      console.error(err);
-      setSyncError("Error de permisos en la base de datos.");
-    };
-
-    const unsubEmp = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'employees'), 
-      (snap) => { setEmployees(snap.docs.map(d => d.data())); setSyncError(''); }, handleDbError);
-    const unsubLoans = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'loans'), 
-      (snap) => setLoans(snap.docs.map(d => d.data())), handleDbError);
-    const unsubVacP = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods'), 
-      (snap) => setVacationPeriods(snap.docs.map(d => d.data())), handleDbError);
-    const unsubVacR = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests'), 
-      (snap) => setVacationRequests(snap.docs.map(d => d.data())), handleDbError);
-
+    const unsubEmp = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'employees'), (snap) => setEmployees(snap.docs.map(d => d.data())), () => setSyncError("Error de permisos."));
+    const unsubLoans = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'loans'), (snap) => setLoans(snap.docs.map(d => d.data())), console.error);
+    const unsubVacP = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods'), (snap) => setVacationPeriods(snap.docs.map(d => d.data())), console.error);
+    const unsubVacR = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests'), (snap) => setVacationRequests(snap.docs.map(d => d.data())), console.error);
     return () => { unsubEmp(); unsubLoans(); unsubVacP(); unsubVacR(); };
   }, [user]);
 
-  // LOGIN HANDLERS
-  const loginWithGoogle = async () => {
-    setActionLoading(true); setLoginError('');
-    try { await signInWithPopup(auth, new GoogleAuthProvider()); } 
-    catch (err) { setLoginError('Error al conectar con Google.'); setActionLoading(false); }
-  };
-
+  const loginWithGoogle = async () => { setActionLoading(true); setLoginError(''); try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (err) { setLoginError('Error de conexión.'); setActionLoading(false); } };
   const navigateTo = (view) => { setCurrentView(view); setSidebarOpen(false); };
 
-  // CRUD HANDLERS
   const handleSaveEmployee = async (data) => {
     if (!user || !db) throw new Error("DB No inicializada");
     const id = editingEmployee ? editingEmployee.id.toString() : Date.now().toString();
     await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', id), { ...data, id });
-    
     if (!editingEmployee && data.fechaIngreso) {
-      const fechaFin = addOneYear(data.fechaIngreso);
-      const periodId = (Date.now() + 1).toString();
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', periodId), {
-        id: periodId, employeeId: id, periodo: `${data.fechaIngreso} - ${fechaFin}`, 
-        diasOtorgados: 30, saldo: 30, remIntegra: false
-      });
+      const fin = addOneYear(data.fechaIngreso);
+      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', (Date.now() + 1).toString()), { id: (Date.now() + 1).toString(), employeeId: id, periodo: `${data.fechaIngreso} - ${fin}`, saldo: 30, diasOtorgados: 30, remIntegra: false });
     }
     navigateTo('employees');
   };
 
   const handleDeleteEmployee = async (id) => {
     if (!user || !db) return;
-    const empIdStr = id.toString();
-    
-    // 1. Eliminar al trabajador
-    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', empIdStr));
-    
-    // 2. BORRADO EN CASCADA (Préstamos, Periodos, Solicitudes)
-    loans.filter(l => String(l.employeeId) === empIdStr).forEach(l => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', l.id.toString())));
-    vacationPeriods.filter(p => String(p.employeeId) === empIdStr).forEach(p => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', p.id.toString())));
-    vacationRequests.filter(r => String(r.employeeId) === empIdStr).forEach(r => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests', r.id.toString())));
+    const empId = id.toString();
+    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'employees', empId));
+    loans.filter(l => String(l.employeeId) === empId).forEach(l => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', l.id.toString())));
+    vacationPeriods.filter(p => String(p.employeeId) === empId).forEach(p => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', p.id.toString())));
+    vacationRequests.filter(r => String(r.employeeId) === empId).forEach(r => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests', r.id.toString())));
   };
 
   const handleSaveLoan = (l) => setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', l.id.toString()), l);
-  const handleProcessLoan = (id) => {
-    const loan = loans.find(l => String(l.id) === String(id));
-    if (loan) {
-      const plan = generarAmortizacion(loan.monto, (loan.monto * (loan.tasaInteres/100)) * (loan.nroCuotas/12), loan.nroCuotas);
-      setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', id.toString()), { 
-        ...loan, tipo: 'prestamo', estado: 'Aprobado', codigoPrestamo: `PRST-${id.slice(-4)}`, detalleCuotas: plan 
-      });
-    }
-  };
-
+  const handleProcessLoan = (id) => { const loan = loans.find(l => String(l.id) === String(id)); if (loan) { const plan = generarAmortizacion(loan.monto, (loan.monto * (loan.tasaInteres/100)) * (loan.nroCuotas/12), loan.nroCuotas); setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'loans', id.toString()), { ...loan, tipo: 'prestamo', estado: 'Aprobado', codigoPrestamo: `PRST-${id.slice(-4)}`, detalleCuotas: plan }); } };
   const handleSaveVacationPeriod = (p) => setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', p.id.toString()), p);
-  const handleProcessVacationRequest = (r) => {
-    const period = vacationPeriods.find(p => String(p.id) === String(r.periodId));
-    if (period) setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', period.id.toString()), { ...period, saldo: period.saldo - r.totalDias });
-    setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests', r.id.toString()), { ...r, estado: 'Aprobado' });
-  };
+  const handleProcessVacationRequest = (r) => { const period = vacationPeriods.find(p => String(p.id) === String(r.periodId)); if (period) setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationPeriods', period.id.toString()), { ...period, saldo: period.saldo - r.totalDias }); setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'vacationRequests', r.id.toString()), { ...r, estado: 'Aprobado' }); };
 
-  // RENDER CONDICIONAL
-  if (authLoading) return <div className="h-screen w-screen flex items-center justify-center dark:bg-gray-900 transition-colors"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+  if (authLoading) return <div className="h-screen w-screen flex items-center justify-center dark:bg-gray-900"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
   if (!user) return <LoginView onGoogle={loginWithGoogle} onGuest={() => signInAnonymously(auth)} loading={actionLoading} error={loginError} darkMode={darkMode} setDarkMode={setDarkMode} />;
 
   const renderView = () => {
@@ -764,54 +592,38 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 font-sans">
-      <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-gray-300 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950 font-bold text-xl text-white tracking-wide">
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-2">E</div> ERP Pro
-        </div>
-        <nav className="p-4 space-y-2">
-          <button onClick={() => navigateTo('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${currentView === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard size={20}/>Dashboard</button>
-          
-          <button onClick={() => setIsPlanillaMenuOpen(!isPlanillaMenuOpen)} className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
-            <div className="flex items-center gap-3"><Briefcase size={20}/>Planilla</div>
-            {isPlanillaMenuOpen ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
-          </button>
-          
-          {isPlanillaMenuOpen && (
-            <div className="ml-9 border-l border-slate-700 pl-2 space-y-1">
-              <button onClick={() => navigateTo('employees')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'employees' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Trabajadores</button>
-              <button onClick={() => navigateTo('consultas_prestamos')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'consultas_prestamos' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Préstamos</button>
-              <button onClick={() => navigateTo('consultas_vacaciones')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'consultas_vacaciones' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Vacaciones</button>
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-slate-800 mt-4">
-             <button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${currentView === 'configuracion' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}><Settings size={20}/>Configuración</button>
-          </div>
-        </nav>
-      </aside>
-
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {syncError && <div className="bg-red-600 text-white p-2 text-center text-xs flex items-center justify-center gap-2"><AlertCircle size={14}/>{syncError}</div>}
-        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 transition-colors">
-          <button onClick={() => setSidebarOpen(true)} className="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400"><Menu size={24}/></button>
-          <div className="flex items-center gap-4 ml-auto">
-             <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
-             <div className="flex items-center gap-3 border-l pl-4 dark:border-gray-700">
-               <div className="text-right hidden sm:block">
-                 <p className="text-sm font-bold dark:text-white leading-none">{user.displayName || 'Usuario ERP'}</p>
-                 <span className="text-[10px] text-gray-500 uppercase tracking-widest">Administrador</span>
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 font-sans">
+        <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-gray-300 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950 font-bold text-xl text-white tracking-wide"><div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-2">E</div> ERP Pro</div>
+          <nav className="p-4 space-y-2">
+            <button onClick={() => navigateTo('dashboard')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${currentView === 'dashboard' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard size={20}/>Dashboard</button>
+            <button onClick={() => setIsPlanillaMenuOpen(!isPlanillaMenuOpen)} className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"><div className="flex items-center gap-3"><Briefcase size={20}/>Planilla</div>{isPlanillaMenuOpen ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}</button>
+            {isPlanillaMenuOpen && (
+              <div className="ml-9 border-l border-slate-700 pl-2 space-y-1">
+                <button onClick={() => navigateTo('employees')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'employees' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Trabajadores</button>
+                <button onClick={() => navigateTo('consultas_prestamos')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'consultas_prestamos' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Préstamos</button>
+                <button onClick={() => navigateTo('consultas_vacaciones')} className={`w-full text-left p-2 text-sm rounded ${currentView === 'consultas_vacaciones' ? 'text-blue-400 font-bold' : 'text-gray-400 hover:text-white'}`}>• Vacaciones</button>
+              </div>
+            )}
+            <div className="pt-4 border-t border-slate-800 mt-4"><button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${currentView === 'configuracion' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 hover:text-white'}`}><Settings size={20}/>Configuración</button></div>
+          </nav>
+        </aside>
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {syncError && <div className="bg-red-600 text-white p-2 text-center text-xs flex items-center justify-center gap-2 transition-all"><AlertCircle size={14}/>{syncError}</div>}
+          <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 transition-colors shadow-sm z-10">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden text-gray-500"><Menu size={24}/></button>
+            <div className="flex items-center gap-4 ml-auto">
+               <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 rounded-full transition-colors">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
+               <div className="flex items-center gap-3 border-l pl-4 dark:border-gray-700">
+                 <div className="text-right hidden sm:block"><p className="text-sm font-bold dark:text-white leading-none">{user.displayName || 'Usuario'}</p><span className="text-[10px] text-gray-500 uppercase tracking-widest">Admin</span></div>
+                 <button onClick={() => signOut(auth)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors"><LogOut size={20}/></button>
                </div>
-               <button onClick={() => signOut(auth)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors"><LogOut size={20}/></button>
-             </div>
-          </div>
-        </header>
-        <div className="flex-1 overflow-auto p-4 sm:p-8">
-          <div className="max-w-7xl mx-auto">
-            {renderView()}
-          </div>
-        </div>
-      </main>
+            </div>
+          </header>
+          <div className="flex-1 overflow-auto p-4 sm:p-8 bg-gray-50 dark:bg-gray-900/50">{renderView()}</div>
+        </main>
+      </div>
     </div>
   );
 }
