@@ -1215,58 +1215,59 @@ export default function App() {
         {/* SIDEBAR */}
         {isSidebarOpen && <div className="fixed inset-0 bg-gray-900/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />}
         
-        <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-gray-300 transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800 bg-slate-950">
+        {/* SIDEBAR ADAPTADO PARA MODO CLARO/OSCURO */}
+        <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 text-gray-700 dark:text-gray-300 transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xl">E</div>
-              <span className="text-white font-bold text-xl tracking-wide">ERP Pro</span>
+              <span className="text-gray-900 dark:text-white font-bold text-xl tracking-wide">ERP Pro</span>
             </div>
-            <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setSidebarOpen(false)}><X size={24} /></button>
+            <button className="md:hidden text-gray-400 hover:text-gray-700 dark:hover:text-white" onClick={() => setSidebarOpen(false)}><X size={24} /></button>
           </div>
 
           <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-            <button onClick={() => navigateTo('dashboard')} className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${currentView === 'dashboard' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}>
+            <button onClick={() => navigateTo('dashboard')} className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${currentView === 'dashboard' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'}`}>
               <LayoutDashboard size={20} /><span className="font-medium">Dashboard</span>
             </button>
 
             {/* Módulo Planilla */}
             <div className="pt-2">
-              <button onClick={() => setIsPlanillaMenuOpen(!isPlanillaMenuOpen)} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
-                <div className="flex items-center space-x-3"><Briefcase size={20} /><span className="font-medium text-gray-200">Planilla</span></div>
+              <button onClick={() => setIsPlanillaMenuOpen(!isPlanillaMenuOpen)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${isPlanillaMenuOpen ? 'text-gray-900 dark:text-white' : 'hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'}`}>
+                <div className="flex items-center space-x-3"><Briefcase size={20} /><span className="font-medium">Planilla</span></div>
                 {isPlanillaMenuOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
 
               {isPlanillaMenuOpen && (
-                <div className="mt-1 space-y-1 pl-10 border-l border-slate-700 ml-5">
+                <div className="mt-1 space-y-1 pl-10 border-l border-gray-200 dark:border-slate-700 ml-5">
                   <div>
-                    <button onClick={() => setIsMantenimientoMenuOpen(!isMantenimientoMenuOpen)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-400 hover:text-gray-200 transition-colors text-sm">
+                    <button onClick={() => setIsMantenimientoMenuOpen(!isMantenimientoMenuOpen)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
                       <span>Mantenimiento</span>{isMantenimientoMenuOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                     {isMantenimientoMenuOpen && (
                       <div className="mt-1 space-y-1 pl-4">
-                        <button onClick={() => navigateTo('employees')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${['employees', 'employee_form'].includes(currentView) ? 'text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-200'}`}>• Trabajadores</button>
+                        <button onClick={() => navigateTo('employees')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${['employees', 'employee_form'].includes(currentView) ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>• Trabajadores</button>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <button onClick={() => setIsConsultasMenuOpen(!isConsultasMenuOpen)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-400 hover:text-gray-200 transition-colors text-sm">
+                    <button onClick={() => setIsConsultasMenuOpen(!isConsultasMenuOpen)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
                       <span>Consultas</span>{isConsultasMenuOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                     {isConsultasMenuOpen && (
                       <div className="mt-1 space-y-1 pl-4">
-                        <button onClick={() => navigateTo('consultas_prestamos')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${currentView === 'consultas_prestamos' ? 'text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-200'}`}>• Préstamos</button>
-                        <button onClick={() => navigateTo('consultas_vacaciones')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${currentView === 'consultas_vacaciones' ? 'text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-200'}`}>• Vacaciones</button>
+                        <button onClick={() => navigateTo('consultas_prestamos')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${currentView === 'consultas_prestamos' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>• Préstamos</button>
+                        <button onClick={() => navigateTo('consultas_vacaciones')} className={`w-full flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs ${currentView === 'consultas_vacaciones' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>• Vacaciones</button>
                       </div>
                     )}
                   </div>
-                  <button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${currentView === 'configuracion' ? 'text-blue-400 font-medium' : 'text-gray-400 hover:text-gray-200'}`}>Configuración</button>
+                  <button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center px-3 py-2 rounded-lg transition-colors text-sm ${currentView === 'configuracion' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}>Configuración</button>
                 </div>
               )}
             </div>
 
-            <div className="pt-4 mt-4 border-t border-slate-800">
-              <button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${currentView === 'configuracion' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-slate-800 hover:text-white'}`}>
+            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-slate-800">
+              <button onClick={() => navigateTo('configuracion')} className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${currentView === 'configuracion' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'}`}>
                 <Settings size={20} />
                 <span className="font-medium">Configuración Global</span>
               </button>
